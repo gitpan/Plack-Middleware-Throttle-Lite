@@ -5,6 +5,7 @@ author:
 build_requires:
   HTTP::Message: 6.01
   Plack: 1.0001
+  Test::Exception: 0
   Test::More: 0.98
   Test::Pod: 1.22
 configure_requires:
@@ -30,13 +31,13 @@ no_index:
 provides:
   Plack::Middleware::Throttle::Lite:
     file: lib/Plack/Middleware/Throttle/Lite.pm
-    version: 0.01
+    version: 0.02
   Plack::Middleware::Throttle::Lite::Backend::Abstract:
     file: lib/Plack/Middleware/Throttle/Lite/Backend/Abstract.pm
-    version: 0.01
+    version: 0.02
   Plack::Middleware::Throttle::Lite::Backend::Simple:
     file: lib/Plack/Middleware/Throttle/Lite/Backend/Simple.pm
-    version: 0.01
+    version: 0.02
 requires:
   Carp: 1.26
   List::MoreUtils: 0.33
@@ -52,5 +53,5 @@ resources:
   bugtracker: https://github.com/Wu-Wu/Plack-Middleware-Throttle-Lite/issues
   homepage: https://metacpan.org/release/Plack-Middleware-Throttle-Lite
   repository: git://github.com/Wu-Wu/Plack-Middleware-Throttle-Lite.git
-version: 0.01
+version: 0.02
 x_authority: cpan:CHIM

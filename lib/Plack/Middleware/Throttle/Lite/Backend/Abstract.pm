@@ -6,7 +6,7 @@ use strict;
 use warnings;
 use Carp ();
 
-our $VERSION = '0.01'; # VERSION
+our $VERSION = '0.02'; # VERSION
 our $AUTHORITY = 'cpan:CHIM'; # AUTHORITY
 
 sub new {
@@ -93,7 +93,7 @@ Plack::Middleware::Throttle::Lite::Backend::Abstract - Base class for Throttle::
 
 =head1 VERSION
 
-version 0.01
+version 0.02
 
 =head1 DESCRIPTION
 
@@ -211,6 +211,12 @@ At the moment known the following storage backends:
 
 Very simple (in-memory) storage backend. Shipped with this distribution. All data holds in memory.
 See details L<Plack::Middleware::Throttle::Lite::Backend::Simple>.
+
+=head2 Plack::Middleware::Throttle::Lite::Backend::Redis
+
+Redis-driven storage backend. Take care about memory consumption, has re-connect feature
+and can use tcp or unix-socket connection to the redis-server. See details
+L<Plack::Middleware::Throttle::Lite::Backend::Redis>.
 
 =head1 BUGS
 

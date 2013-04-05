@@ -6,7 +6,7 @@ use strict;
 use warnings;
 use parent 'Plack::Middleware::Throttle::Lite::Backend::Abstract';
 
-our $VERSION = '0.01'; # VERSION
+our $VERSION = '0.02'; # VERSION
 our $AUTHORITY = 'cpan:CHIM'; # AUTHORITY
 
 my $_storage;
@@ -33,7 +33,7 @@ Plack::Middleware::Throttle::Lite::Backend::Simple - Simple (in-memory) backend 
 
 =head1 VERSION
 
-version 0.01
+version 0.02
 
 =head1 DESCRIPTION
 

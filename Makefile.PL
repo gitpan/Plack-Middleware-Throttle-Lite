@@ -14,6 +14,7 @@ my %WriteMakefileArgs = (
   "BUILD_REQUIRES" => {
     "HTTP::Message" => "6.01",
     "Plack" => "1.0001",
+    "Test::Exception" => 0,
     "Test::More" => "0.98",
     "Test::Pod" => "1.22"
   },
@@ -35,7 +36,7 @@ my %WriteMakefileArgs = (
     "strict" => 0,
     "warnings" => 0
   },
-  "VERSION" => "0.01",
+  "VERSION" => "0.02",
   "test" => {
     "TESTS" => "t/*.t"
   }

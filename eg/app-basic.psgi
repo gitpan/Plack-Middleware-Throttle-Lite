@@ -38,14 +38,19 @@ Content like
 
 After limit requests will be equal used requests, additional header appears
 
+    Retry-After: 1239
     X-Throttle-Lite-Expire: 1239
     X-Throttle-Lite-Limit: 5
     X-Throttle-Lite-Units: req/hour
     X-Throttle-Lite-Used: 5
 
-and response code will be 503 with content
+and response code will be
 
-    Limit exceeded
+    HTTP/1.0 429 Too Many Requests
+
+with content
+
+    Rate Limit Exceeded
 
 =cut
 

@@ -27,11 +27,11 @@ No B<X-Throttle-Lite-*> headers will be displayed. Only content like
 
 Headers B<X-Throttle-Lite-*> won't be displayed because of any remote address blacklisted. Response code is
 
-    HTTP/1.0 503 Service Unavailable
+    HTTP/1.0 403 Forbidden
 
 Content like
 
-    Access from blacklisted IP address cannot be done!
+    IP Address Blacklisted
 
 =cut
 

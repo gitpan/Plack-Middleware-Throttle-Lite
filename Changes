@@ -1,4 +1,12 @@
 Revision history for Perl extension Plack::Middleware::Throttle::Lite.
 
+0.02    Fri Apr 5 15:43:31 2013 +0000
+    - added Retry-After header to list of injected to response headers
+    - change default response codes (from "503" to "403" for blacklisting and "503" to "429" for limiting)
+    - now using Test::Exception
+    - new configuration option 'header_prefix' added
+    - default values available via single method now
+    - in documentation Redis backend mentioned
+
 0.01    Sun Mar 24 09:10:12 2013 +0000
     - initial release

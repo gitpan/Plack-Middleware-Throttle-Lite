@@ -40,8 +40,8 @@ my @samples = (
     3,  200,    3,      '',     'OK',              'text/html',
     4,  200,    4,      '',     'OK',              'text/html',
     5,  200,    5,      '1',    'OK',              'text/html',
-    6,  503,    5,      '1',    'Limit exceeded',  'text/plain',
-    7,  503,    5,      '1',    'Limit exceeded',  'text/plain',
+    6,  429,    5,      '1',    'Limit Exceeded',  'text/plain',
+    7,  429,    5,      '1',    'Limit Exceeded',  'text/plain',
 );
 
 test_psgi $app1, sub {
@@ -50,11 +50,12 @@ test_psgi $app1, sub {
     while (my ($num, $code, $used, $expire_in, $content, $type) = splice(@samples, 0, 6)) {
         my $reqno = 'Request (' . $num . ')';
         my $res = $cb->(GET '/api/user/login');
-        is $res->code,                                      $code,          $reqno . ' code';
-        is $res->header('X-Throttle-Lite-Used'),            $used,          $reqno . ' used header';
-        is defined($res->header('X-Throttle-Lite-Expire')), $expire_in,     $reqno . ' expire-in header';
-        like $res->content,                                 qr/$content/,   $reqno . ' content';
-        is $res->content_type,                              $type,          $reqno . ' content type';
+        is $res->code,                                  $code,          $reqno . ' code';
+        is $res->header('X-Throttle-Lite-Used'),        $used,          $reqno . ' used header';
+        is !!$res->header('X-Throttle-Lite-Expire'),    $expire_in,     $reqno . ' expire-in header';
+        is !!$res->header('Retry-After'),               $expire_in,     $reqno . ' retry-after header';
+        like $res->content,                             qr/$content/,   $reqno . ' content';
+        is $res->content_type,                          $type,          $reqno . ' content type';
     }
 };
 
@@ -66,7 +67,7 @@ my %ips = (
         #   code  used   limit      expire   content              mime
         1,  200,    1,    2,          '',     'OK',              'text/html',
         2,  200,    2,    2,         '1',     'OK',              'text/html',
-        3,  503,    2,    2,         '1',     'Limit exceeded',  'text/plain',
+        3,  429,    2,    2,         '1',     'Limit Exceeded',  'text/plain',
     ],
     '10.104.52.18' => [
         #   code  used   limit       expire  content              mime
@@ -95,12 +96,13 @@ foreach my $ipaddr (keys %ips) {
             my $reqno = 'Request (' . $num . ') [' . $ipaddr . ']';
             my $res = $cb->(GET '/api/user/login');
 
-            is $res->code,                                      $code,          $reqno . ' code';
-            is $res->header('X-Throttle-Lite-Used'),            $used,          $reqno . ' used header';
-            is $res->header('X-Throttle-Lite-Limit'),           $limit,         $reqno . ' limit header';
-            is defined($res->header('X-Throttle-Lite-Expire')), $expire_in,     $reqno . ' expire-in header';
-            like $res->content,                                 qr/$content/,   $reqno . ' content';
-            is $res->content_type,                              $type,          $reqno . ' content type';
+            is $res->code,                                  $code,          $reqno . ' code';
+            is $res->header('X-Throttle-Lite-Used'),        $used,          $reqno . ' used header';
+            is $res->header('X-Throttle-Lite-Limit'),       $limit,         $reqno . ' limit header';
+            is !!$res->header('X-Throttle-Lite-Expire'),    $expire_in,     $reqno . ' expire-in header';
+            is !!$res->header('Retry-After'),               $expire_in,     $reqno . ' retry-after header';
+            like $res->content,                             qr/$content/,   $reqno . ' content';
+            is $res->content_type,                          $type,          $reqno . ' content type';
         };
     }
 }
@@ -113,12 +115,12 @@ my %ip_user = (
     '10.13.100.221:ldap'  => [
         1,  200,    1,    2,          '',     'OK',              'text/html',
         2,  200,    2,    2,         '1',     'OK',              'text/html',
-        3,  503,    2,    2,         '1',     'Limit exceeded',  'text/plain',
+        3,  429,    2,    2,         '1',     'Limit Exceeded',  'text/plain',
     ],
     '10.13.100.221:bind'  => [
         1,  200,    1,    2,          '',     'OK',              'text/html',
         2,  200,    2,    2,         '1',     'OK',              'text/html',
-        3,  503,    2,    2,         '1',     'Limit exceeded',  'text/plain',
+        3,  429,    2,    2,         '1',     'Limit Exceeded',  'text/plain',
     ],
     '10.104.52.18:chim' => [
         1,  200,    1,  'unlimited',  '',     'OK',              'text/html',
@@ -153,12 +155,13 @@ foreach my $pair (keys %ip_user) {
             my $reqno = 'Request (' . $num . ') [' . $pair . ']';
             my $res = $cb->(GET '/api/user/login');
 
-            is $res->code,                                      $code,          $reqno . ' code';
-            is $res->header('X-Throttle-Lite-Used'),            $used,          $reqno . ' used header';
-            is $res->header('X-Throttle-Lite-Limit'),           $limit,         $reqno . ' limit header';
-            is defined($res->header('X-Throttle-Lite-Expire')), $expire_in,     $reqno . ' expire-in header';
-            like $res->content,                                 qr/$content/,   $reqno . ' content';
-            is $res->content_type,                              $type,          $reqno . ' content type';
+            is $res->code,                                  $code,          $reqno . ' code';
+            is $res->header('X-Throttle-Lite-Used'),        $used,          $reqno . ' used header';
+            is $res->header('X-Throttle-Lite-Limit'),       $limit,         $reqno . ' limit header';
+            is !!$res->header('X-Throttle-Lite-Expire'),    $expire_in,     $reqno . ' expire-in header';
+            is !!$res->header('Retry-After'),               $expire_in,     $reqno . ' retry-after header';
+            like $res->content,                             qr/$content/,   $reqno . ' content';
+            is $res->content_type,                          $type,          $reqno . ' content type';
         };
     }
 }

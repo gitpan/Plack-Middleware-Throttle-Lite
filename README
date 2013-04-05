@@ -2,7 +2,7 @@ NAME
     Plack::Middleware::Throttle::Lite - Requests throttling for Plack
 
 VERSION
-    version 0.01
+    version 0.02
 
 DESCRIPTION
     This middleware allows to restrict access to PSGI application based on
@@ -12,7 +12,7 @@ DESCRIPTION
   FEATURES
     Blacklisting
         Requests from specified IPs (including ranges) or CIDRs are rejects
-        immediately with response 503 Service Unavailable.
+        immediately with response 403 Forbidden.
 
     Whitelisting
         Requests from specified IPs (including ranges) or CIDRs allows to
@@ -80,6 +80,10 @@ CONFIGURATION OPTIONS
     maximum requests default value will be 199 and measuring units -
     req/hour. So this option must be set to desired value to have get
     correct throttling policy.
+
+    When a client exceeds rate limit, middleware returns a 429 Too Many
+    Requests response with an associated "Rate Limit Exceeded" message in
+    the response body.
 
   backend
     Storage backend and its configuration options. Accepted values either
@@ -173,6 +177,10 @@ CONFIGURATION OPTIONS
 
     More details in Net::CIDR::Lite.
 
+    When a client's IP address is in the blacklist, middleware by default
+    returns a 403 Forbidden response with an associated "IP Address
+    Blacklisted" message in the response body.
+
     Warning! Blacklist has higher priority than "whitelist".
 
   whitelist
@@ -188,6 +196,24 @@ CONFIGURATION OPTIONS
     Warning! Whitelist has lower priority than "blacklist". Be sure that IP
     does not exists in blacklist by adding IP to whitelist.
 
+  header_prefix
+    This one allows to change prefix in output headers. A value should be
+    passed as string. It will be normalized before using. Any alpha-numeric
+    characters and spaces are allowed. The parts of passed string will be
+    capitalized and joined with a hyphen.
+
+        header_prefix => ' tom di*ck harry  ' # goes to X-Tom-Dick-Harry-Limit, X-Tom-Dick-Harry-Used, ..
+        header_prefix => 'lucky 13'           # ..X-Lucky-13-Limit, X-Lucky-13-Used, ..
+        header_prefix => ''                   # ..X-Throttle-Lite-Limit, X-Throttle-Lite-Used, ..
+        header_prefix => '$ @ # & * /| ; '    # also would be X-Throttle-Lite-Limit, X-Throttle-Lite-Used, ..
+        header_prefix => 'a-b-c'              # ..X-Abc-Limit, X-Abc-Used, ..
+        header_prefix => '2.71828182846'      # ..X-271828182846-Limit, X-271828182846-Used, ..
+
+    This option is not required. Default value is Throttle-Lite. Header
+    prefix will be set to the default value in cases of specified value
+    won't pass checks. This option does not affect the Retry-After response
+    header.
+
 METHODS
   prepare_app
     See Plack::Middleware
@@ -199,7 +225,11 @@ METHODS
     Adds extra headers to each throttled response such as maximum requests
     (X-Throttle-Lite-Limit), measuring units (X-Throttle-Lite-Units),
     requests done (X-Throttle-Lite-Used). If maximum requests is equal to
-    requests done X-Throttle-Lite-Expire header will appears.
+    requests done X-Throttle-Lite-Expire and Retry-After headers will be
+    injected.
+
+    Headers (except of Retry-After) might be customized by using
+    configuration option "header_prefix".
 
   reject_request
     Rejects incoming request with specific code and reason. It might be
@@ -230,6 +260,14 @@ SEE ALSO
     Plack
 
     Plack::Middleware
+
+    RFC 2616 <http://tools.ietf.org/html/rfc2616>
+
+    Hypertext Transfer Protocol - HTTP/1.1. Section 14.37: "Retry-After"
+
+    RFC 6585 <http://tools.ietf.org/html/rfc6585>
+
+    Additional HTTP Status Codes. Section 4: "429 Too Many Requests"
 
 AUTHOR
     Anton Gerasimov <chim@cpan.org>

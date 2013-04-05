@@ -6,14 +6,14 @@ use strict;
 use warnings;
 use feature ':5.10';
 use parent 'Plack::Middleware';
-use Plack::Util::Accessor qw(limits maxreq units backend routes blacklist whitelist def_maxreq def_units def_backend privileged);
+use Plack::Util::Accessor qw(limits maxreq units backend routes blacklist whitelist defaults privileged header_prefix);
 use Scalar::Util qw(reftype);
 use List::MoreUtils qw(any);
 use Plack::Util;
 use Carp ();
 use Net::CIDR::Lite;
 
-our $VERSION = '0.01'; # VERSION
+our $VERSION = '0.02'; # VERSION
 our $AUTHORITY = 'cpan:CHIM'; # AUTHORITY
 
 #
@@ -21,10 +21,16 @@ our $AUTHORITY = 'cpan:CHIM'; # AUTHORITY
 sub prepare_app {
     my ($self) = @_;
 
-    $self->def_maxreq(199);
-    $self->def_units('req/hour');
-    $self->def_backend('Simple');
+    # setting up defaults
+    $self->defaults({
+        requests        => 199,
+        units           => 'req/hour',
+        backend         => 'Simple',
+        header_prefix   => 'Throttle-Lite',
+        username        => 'nobody',
+    });
 
+    $self->_normalize_header_prefix;
     $self->_normalize_limits;
     $self->_initialize_backend;
     $self->_normalize_routes;
@@ -44,7 +50,7 @@ sub call {
 
     if ($self->have_to_throttle($env)) {
 
-        return $self->reject_request(blacklist => 503) if $self->is_remote_blacklisted($env);
+        return $self->reject_request(blacklist => 403) if $self->is_remote_blacklisted($env);
 
         # update client id
         $self->backend->requester_id($self->requester_id($env));
@@ -54,7 +60,7 @@ sub call {
 
         $response = $self->is_allowed
             ? $self->app->($env)
-            : $self->reject_request(ratelimit => 503);
+            : $self->reject_request(ratelimit => 429);
 
         $self->response_cb($response, sub {
             $self->modify_headers(@_);
@@ -73,15 +79,38 @@ sub reject_request {
     my ($self, $reason, $code) = @_;
 
     my $reasons = {
-        blacklist => 'Access from blacklisted IP address cannot be done!',
-        ratelimit => 'Limit exceeded!',
+        blacklist => 'IP Address Blacklisted',
+        ratelimit => 'Rate Limit Exceeded',
     };
 
-    [
-        $code,
-        [ 'Content-Type' => 'text/plain', ],
-        [ $reasons->{$reason} ]
-    ];
+    [ $code, [ 'Content-Type' => 'text/plain', ], [ $reasons->{$reason} ] ];
+}
+
+#
+# Set prefix for headers
+sub _normalize_header_prefix {
+    my ($self) = @_;
+
+    my $prefix = $self->defaults->{header_prefix};
+
+    if ($self->header_prefix) {
+        $prefix = $self->header_prefix;
+
+        # remove invalid chars
+        $prefix =~ s/[^0-9a-zA-Z\s]//g;
+
+        # trim spaces
+        $prefix =~ s/^\s+//g;
+        $prefix =~ s/\s+$//g;
+
+        # camelize
+        $prefix = join '-' => map { ucfirst } split /\s+/, $prefix;
+
+        # set default value in case of empty prefix
+        $prefix = $prefix || $self->defaults->{header_prefix};
+    }
+
+    $self->header_prefix($prefix);
 }
 
 #
@@ -101,12 +130,12 @@ sub _normalize_limits {
         my $t_limits = lc($self->limits);
         $t_limits =~ s/\s+/ /g;
         $t_limits =~ /$limits_re/;
-        $self->maxreq($+{numreqs} || $self->def_maxreq);
-        $self->units($units->{$+{units}} || $self->def_units)
+        $self->maxreq($+{numreqs} || $self->defaults->{requests});
+        $self->units($units->{$+{units}} || $self->defaults->{units})
     }
     else {
-        $self->maxreq($self->def_maxreq);
-        $self->units($self->def_units)
+        $self->maxreq($self->defaults->{requests});
+        $self->units($self->defaults->{units})
     }
 }
 
@@ -115,7 +144,7 @@ sub _normalize_limits {
 sub _initialize_backend {
     my ($self) = @_;
 
-    my ($class, $args) = ($self->def_backend, {});
+    my ($class, $args) = ($self->defaults->{backend}, {});
 
     if ($self->backend) {
         given (reftype $self->backend) {
@@ -163,15 +192,19 @@ sub modify_headers {
     my ($self, $response) = @_;
     my $headers = $response->[1];
 
-    my %info = (
-        Limit => $self->privileged ? 'unlimited' : $self->maxreq,
-        Units => $self->units,
-        Used  => $self->backend->reqs_done,
+    my $prefix = $self->header_prefix;
+
+    my %inject = (
+        "X-${prefix}-Limit" => $self->privileged ? 'unlimited' : $self->maxreq,
+        "X-${prefix}-Units" => $self->units,
+        "X-${prefix}-Used"  => $self->backend->reqs_done,
     );
 
-    $info{Expire} = $self->backend->expire_in if ($self->backend->reqs_done >= $self->maxreq) && !$self->privileged;
+    if (($self->backend->reqs_done >= $self->maxreq) && !$self->privileged) {
+        $inject{"X-${prefix}-Expire"} = $inject{"Retry-After"} = $self->backend->expire_in;
+    }
 
-    map { Plack::Util::header_set($headers, 'X-Throttle-Lite-' . $_, $info{$_}) } sort keys %info;
+    map { Plack::Util::header_set($headers, $_, $inject{$_}) } sort keys %inject;
 
     $response;
 }
@@ -242,7 +275,7 @@ sub is_allowed {
 # Requester's ID
 sub requester_id {
     my ($self, $env) = @_;
-    join ':' => 'throttle', $env->{REMOTE_ADDR}, ($env->{REMOTE_USER} || 'nobody');
+    join ':' => 'throttle', $env->{REMOTE_ADDR}, ($env->{REMOTE_USER} || $self->defaults->{username});
 }
 
 1; # End of Plack::Middleware::Throttle::Lite
@@ -257,7 +290,7 @@ Plack::Middleware::Throttle::Lite - Requests throttling for Plack
 
 =head1 VERSION
 
-version 0.01
+version 0.02
 
 =head1 DESCRIPTION
 
@@ -270,7 +303,7 @@ Implemetation of the middleware inspired by L<Plack::Middleware::Throttle>.
 
 =item Blacklisting
 
-Requests from specified IPs (including ranges) or CIDRs are rejects immediately with response B<503 Service Unavailable>.
+Requests from specified IPs (including ranges) or CIDRs are rejects immediately with response B<403 Forbidden>.
 
 =item Whitelisting
 
@@ -342,6 +375,9 @@ Or even
 
 If this option is omitted, there are some defaults will be assigned. For maximum requests default value will be B<199>
 and measuring units - B<req/hour>. So this option must be set to desired value to have get correct throttling policy.
+
+When a client exceeds rate limit, middleware returns a B<429 Too Many Requests> response with an associated
+C<Rate Limit Exceeded> message in the response body.
 
 =head2 backend
 
@@ -430,6 +466,9 @@ IP addresses can be passed either as string or as list of strings in a different
 
 More details in L<Net::CIDR::Lite>.
 
+When a client's IP address is in the blacklist, middleware by default returns a B<403 Forbidden> response with an
+associated C<IP Address Blacklisted> message in the response body.
+
 B<Warning!> Blacklist has higher priority than L</whitelist>.
 
 =head2 whitelist
@@ -442,6 +481,21 @@ Rules of configuration IP addresses for whitelist the same as for the L</blackli
 
 B<Warning!> Whitelist has lower priority than L</blacklist>. Be sure that IP does not exists in blacklist by adding IP
 to whitelist.
+
+=head2 header_prefix
+
+This one allows to change prefix in output headers. A value should be passed as string. It will be normalized before using.
+Any alpha-numeric characters and spaces are allowed. The parts of passed string will be capitalized and joined with a hyphen.
+
+    header_prefix => ' tom di*ck harry  ' # goes to X-Tom-Dick-Harry-Limit, X-Tom-Dick-Harry-Used, ..
+    header_prefix => 'lucky 13'           # ..X-Lucky-13-Limit, X-Lucky-13-Used, ..
+    header_prefix => ''                   # ..X-Throttle-Lite-Limit, X-Throttle-Lite-Used, ..
+    header_prefix => '$ @ # & * /| ; '    # also would be X-Throttle-Lite-Limit, X-Throttle-Lite-Used, ..
+    header_prefix => 'a-b-c'              # ..X-Abc-Limit, X-Abc-Used, ..
+    header_prefix => '2.71828182846'      # ..X-271828182846-Limit, X-271828182846-Used, ..
+
+This option is not required. Default value is B<Throttle-Lite>. Header prefix will be set to the default value in cases of
+specified value won't pass checks. This option does not affect the B<Retry-After> response header.
 
 =head1 METHODS
 
@@ -457,7 +511,9 @@ See L<Plack::Middleware>
 
 Adds extra headers to each throttled response such as maximum requests (B<X-Throttle-Lite-Limit>),
 measuring units (B<X-Throttle-Lite-Units>), requests done (B<X-Throttle-Lite-Used>). If maximum requests is equal to
-requests done B<X-Throttle-Lite-Expire> header will appears.
+requests done B<X-Throttle-Lite-Expire> and B<Retry-After> headers will be injected.
+
+Headers (except of B<Retry-After>) might be customized by using configuration option L</header_prefix>.
 
 =head2 reject_request
 
@@ -493,6 +549,14 @@ L<https://github.com/Wu-Wu/Plack-Middleware-Throttle-Lite/issues>
 L<Plack>
 
 L<Plack::Middleware>
+
+L<RFC 2616|http://tools.ietf.org/html/rfc2616>
+
+Hypertext Transfer Protocol - HTTP/1.1. Section 14.37: C<Retry-After>
+
+L<RFC 6585|http://tools.ietf.org/html/rfc6585>
+
+Additional HTTP Status Codes. Section 4: C<429 Too Many Requests>
 
 =head1 AUTHOR
 
