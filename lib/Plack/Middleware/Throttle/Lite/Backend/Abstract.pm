@@ -5,8 +5,9 @@ package Plack::Middleware::Throttle::Lite::Backend::Abstract;
 use strict;
 use warnings;
 use Carp ();
+use POSIX qw/strftime/;
 
-our $VERSION = '0.02'; # VERSION
+our $VERSION = '0.03'; # VERSION
 our $AUTHORITY = 'cpan:CHIM'; # AUTHORITY
 
 sub new {
@@ -50,11 +51,15 @@ sub settings {
     my $settings = {
         'req/day'  => {
             'interval' => 86400,
-            'format'   => '%.4d%.2d%.2d',
+            'format'   => '%Y%j',
         },
         'req/hour' => {
             'interval' => 3600,
-            'format'   => '%.4d%.2d%.2d%.2d',
+            'format'   => '%Y%j%H',
+        },
+        'req/min'  => {
+            'format'   => '%Y%j%H%M',
+            'interval' => 60,
         },
     };
 
@@ -64,15 +69,26 @@ sub settings {
 sub expire_in {
     my ($self) = @_;
 
-    my ($sec, $min) = localtime(time);
-    $self->settings->{'interval'} - (60 * $min + $sec);
+    my ($sec, $min, $hour) = localtime(time);
+    my $unit = $self->settings->{'unit'} || 'req/hour';
+
+    my $already_passed;
+    if ($unit eq 'req/day') {
+        $already_passed = 3600 * $hour + 60 * $min + $sec;
+    }
+    elsif ($unit eq 'req/hour') {
+        $already_passed = 60 * $min + $sec;
+    }
+    else {
+        $already_passed = $sec;
+    }
+    $self->settings->{'interval'} - $already_passed;
 }
 
 sub ymdh {
     my ($self) = @_;
 
-    my (undef, undef, $hour, $mday, $mon, $year) = localtime(time);
-    sprintf($self->settings->{'format'} => (1900 + $year), (1 + $mon), $mday, $hour);
+    strftime($self->settings->{'format'} => localtime(time));
 }
 
 sub cache_key {
@@ -93,7 +109,7 @@ Plack::Middleware::Throttle::Lite::Backend::Abstract - Base class for Throttle::
 
 =head1 VERSION
 
-version 0.02
+version 0.03
 
 =head1 DESCRIPTION
 
@@ -217,6 +233,10 @@ See details L<Plack::Middleware::Throttle::Lite::Backend::Simple>.
 Redis-driven storage backend. Take care about memory consumption, has re-connect feature
 and can use tcp or unix-socket connection to the redis-server. See details
 L<Plack::Middleware::Throttle::Lite::Backend::Redis>.
+
+=head2 Plack::Middleware::Throttle::Lite::Backend::Memcached
+
+Memcached-driven storage backend. See details L<Plack::Middleware::Throttle::Lite::Backend::Memcached>.
 
 =head1 BUGS
 

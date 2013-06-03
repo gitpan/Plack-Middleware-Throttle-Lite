@@ -15,6 +15,11 @@ lib/Plack/Middleware/Throttle/Lite/Backend/Simple.pm
 t/00-compile.t
 t/01-prepare.t
 t/02-simple.t
+t/03-limits.t
+t/04-blacklist.t
+t/05-whitelist.t
+t/06-user.t
+t/lib/PMTL.pm
 t/release-distmeta.t
 t/release-kwalitee.t
 t/release-pod-coverage.t

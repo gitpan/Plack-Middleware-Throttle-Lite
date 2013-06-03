@@ -1,5 +1,10 @@
 Revision history for Perl extension Plack::Middleware::Throttle::Lite.
 
+0.03    Mon Jun 3 14:31:05 2013 +0000
+    - updated tests
+    - added per-minute throttling (GH#1, thanks Moritz Lenz)
+    - in documentation Memcached backend mentioned
+
 0.02    Fri Apr 5 15:43:31 2013 +0000
     - added Retry-After header to list of injected to response headers
     - change default response codes (from "503" to "403" for blacklisting and "503" to "429" for limiting)

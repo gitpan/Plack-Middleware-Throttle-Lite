@@ -29,6 +29,7 @@ my %WriteMakefileArgs = (
     "Carp" => "1.26",
     "List::MoreUtils" => "0.33",
     "Net::CIDR::Lite" => "0.21",
+    "POSIX" => 0,
     "Plack" => "1.0001",
     "Scalar::Util" => "1.23",
     "feature" => 0,
@@ -36,7 +37,7 @@ my %WriteMakefileArgs = (
     "strict" => 0,
     "warnings" => 0
   },
-  "VERSION" => "0.02",
+  "VERSION" => "0.03",
   "test" => {
     "TESTS" => "t/*.t"
   }

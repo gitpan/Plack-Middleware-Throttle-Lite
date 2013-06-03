@@ -13,7 +13,9 @@ use Plack::Util;
 use Carp ();
 use Net::CIDR::Lite;
 
-our $VERSION = '0.02'; # VERSION
+no if $] >= 5.018, 'warnings', "experimental::smartmatch";
+
+our $VERSION = '0.03'; # VERSION
 our $AUTHORITY = 'cpan:CHIM'; # AUTHORITY
 
 #
@@ -290,7 +292,7 @@ Plack::Middleware::Throttle::Lite - Requests throttling for Plack
 
 =head1 VERSION
 
-version 0.02
+version 0.03
 
 =head1 DESCRIPTION
 
@@ -311,7 +313,7 @@ Requests from specified IPs (including ranges) or CIDRs allows to get an unlimit
 
 =item Flexible and simple throttling policy
 
-Access to an application might be configured on either by hourly or by daily basis.
+Access to an application might be configured by using one of the several time measuring units (minute, hour, day).
 
 =item Routes configuration
 
@@ -345,13 +347,15 @@ It will not install C<a-half-of-CPAN> or C<heavy> dependencies!
 =head2 limits
 
 By this option is defined the throttling policy. At the moment, there are two variants in limiting of requests:
-C<per hour> and C<per day>. Value of maximum requests might be pointed as number and measuring units (hour, day).
+C<per hour>, C<per day> and C<per minute>. Value of maximum requests might be pointed as number and measuring units (hour, day, min).
 Some examples:
 
     # restrict to 520 request in an hour
     enable 'Throttle::Lite', limits => '520 req/hour';
     # ..maybe 10000 requests in a day?
     enable 'Throttle::Lite', limits => '10000 req/day';
+    # or 30 per minute:
+    enable 'Throttle::Lite', limits => '30 req/min';
 
 Also valid more short constructions:
 
@@ -359,6 +363,8 @@ Also valid more short constructions:
     enable 'Throttle::Lite', limits => '315 r/h';
     # ..19999 requests in a day
     enable 'Throttle::Lite', limits => '19999 r/d';
+    # ..55 requests per minute:
+    enable 'Throttle::Lite', limits => '55 r/m';
 
 Or even
 
@@ -538,6 +544,14 @@ Checks if client is not exceeded maximum allowed requests.
 =head2 requester_id
 
 Builds unique (as possible) indentificator of the client based on its IP address and name.
+
+=head1 ACKNOWLEDGEMENTS
+
+=over 4
+
+=item Moritz Lenz (moritz)
+
+=back
 
 =head1 BUGS
 
