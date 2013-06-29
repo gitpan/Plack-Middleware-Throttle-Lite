@@ -31,13 +31,13 @@ no_index:
 provides:
   Plack::Middleware::Throttle::Lite:
     file: lib/Plack/Middleware/Throttle/Lite.pm
-    version: 0.03
+    version: 0.04
   Plack::Middleware::Throttle::Lite::Backend::Abstract:
     file: lib/Plack/Middleware/Throttle/Lite/Backend/Abstract.pm
-    version: 0.03
+    version: 0.04
   Plack::Middleware::Throttle::Lite::Backend::Simple:
     file: lib/Plack/Middleware/Throttle/Lite/Backend/Simple.pm
-    version: 0.03
+    version: 0.04
 requires:
   Carp: 1.26
   List::MoreUtils: 0.33
@@ -45,14 +45,13 @@ requires:
   POSIX: 0
   Plack: 1.0001
   Scalar::Util: 1.23
-  feature: 0
   parent: 0
-  perl: 5.010001
+  perl: 5.008009
   strict: 0
   warnings: 0
 resources:
   bugtracker: https://github.com/Wu-Wu/Plack-Middleware-Throttle-Lite/issues
   homepage: https://metacpan.org/release/Plack-Middleware-Throttle-Lite
   repository: git://github.com/Wu-Wu/Plack-Middleware-Throttle-Lite.git
-version: 0.03
+version: 0.04
 x_authority: cpan:CHIM

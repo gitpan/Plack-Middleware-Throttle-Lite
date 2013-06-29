@@ -7,7 +7,7 @@ use warnings;
 use Carp ();
 use POSIX qw/strftime/;
 
-our $VERSION = '0.03'; # VERSION
+our $VERSION = '0.04'; # VERSION
 our $AUTHORITY = 'cpan:CHIM'; # AUTHORITY
 
 sub new {
@@ -109,7 +109,7 @@ Plack::Middleware::Throttle::Lite::Backend::Abstract - Base class for Throttle::
 
 =head1 VERSION
 
-version 0.03
+version 0.04
 
 =head1 DESCRIPTION
 

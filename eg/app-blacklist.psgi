@@ -1,6 +1,5 @@
 use strict;
 use warnings;
-use feature ':5.10';
 use Plack::Builder;
 use Plack::Request;
 use Plack::Response;
@@ -43,9 +42,11 @@ builder {
         my ($env) = @_;
         my $body;
 
-        given (Plack::Request->new($env)->path_info) {
-            when (qr{^/api/(user|host)}i) { $body = 'API: ' . ucfirst($1)   }
-            default                       { $body = 'Throttle-free request' }
+        if (Plack::Request->new($env)->path_info =~ qr{^/api/(user|host)}i) {
+            $body = 'API: ' . ucfirst($1);
+        }
+        else {
+            $body = 'Throttle-free request';
         }
 
         Plack::Response->new(200, ['Content-Type' => 'text/plain'], $body)->finalize;

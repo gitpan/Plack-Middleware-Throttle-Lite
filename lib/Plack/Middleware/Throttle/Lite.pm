@@ -4,7 +4,6 @@ package Plack::Middleware::Throttle::Lite;
 
 use strict;
 use warnings;
-use feature ':5.10';
 use parent 'Plack::Middleware';
 use Plack::Util::Accessor qw(limits maxreq units backend routes blacklist whitelist defaults privileged header_prefix);
 use Scalar::Util qw(reftype);
@@ -13,9 +12,7 @@ use Plack::Util;
 use Carp ();
 use Net::CIDR::Lite;
 
-no if $] >= 5.018, 'warnings', "experimental::smartmatch";
-
-our $VERSION = '0.03'; # VERSION
+our $VERSION = '0.04'; # VERSION
 our $AUTHORITY = 'cpan:CHIM'; # AUTHORITY
 
 #
@@ -126,14 +123,14 @@ sub _normalize_limits {
         'd' => 'req/day',
     };
 
-    my $limits_re = qr{^(?<numreqs>\d*)(\s*)(r|req)(\/|\sper\s)(?<units>h|hour|d|day|m|min).*};
+    my $limits_re = qr{^(\d*)(\s*)(r|req)(\/|\sper\s)(h|hour|d|day|m|min).*};
 
     if ($self->limits) {
         my $t_limits = lc($self->limits);
         $t_limits =~ s/\s+/ /g;
         $t_limits =~ /$limits_re/;
-        $self->maxreq($+{numreqs} || $self->defaults->{requests});
-        $self->units($units->{$+{units}} || $self->defaults->{units})
+        $self->maxreq($1 || $self->defaults->{requests});
+        $self->units($units->{$5} || $self->defaults->{units})
     }
     else {
         $self->maxreq($self->defaults->{requests});
@@ -149,10 +146,15 @@ sub _initialize_backend {
     my ($class, $args) = ($self->defaults->{backend}, {});
 
     if ($self->backend) {
-        given (reftype $self->backend) {
-            when (undef)   { ($class, $args) = ($self->backend, {})            }
-            when ('ARRAY') { ($class, $args) = @{ $self->backend }             }
-            default        { Carp::croak 'Expected scalar or array reference!' }
+        my $reft = reftype $self->backend;
+        if (! defined($reft)) { # SCALAR
+            ($class, $args) = ($self->backend, {});
+        }
+        elsif ($reft eq 'ARRAY') {
+            ($class, $args) = @{ $self->backend };
+        }
+        else {
+            Carp::croak 'Expected scalar or array reference!';
         }
     }
 
@@ -169,19 +171,18 @@ sub _normalize_routes {
     my $routes = [];
 
     if ($self->routes) {
-        given (reftype $self->routes) {
-            when (undef) {
-                $routes = [ $self->routes ];
-            }
-            when ('REGEXP') {
-                $routes = [ $self->routes ];
-            }
-            when ('ARRAY') {
-                $routes = $self->routes;
-            }
-            default {
-                Carp::croak 'Expected scalar, regex or array reference!';
-            }
+        my $reft = reftype $self->routes;
+        if (! defined($reft)) { # SCALAR
+            $routes = [ $self->routes ];
+        }
+        elsif ($reft eq 'REGEXP') {
+            $routes = [ $self->routes ];
+        }
+        elsif ($reft eq 'ARRAY') {
+            $routes = $self->routes;
+        }
+        else {
+            Carp::croak 'Expected scalar, regex or array reference!';
         }
     }
 
@@ -292,7 +293,7 @@ Plack::Middleware::Throttle::Lite - Requests throttling for Plack
 
 =head1 VERSION
 
-version 0.03
+version 0.04
 
 =head1 DESCRIPTION
 

@@ -2,7 +2,7 @@ NAME
     Plack::Middleware::Throttle::Lite - Requests throttling for Plack
 
 VERSION
-    version 0.03
+    version 0.04
 
 DESCRIPTION
     This middleware allows to restrict access to PSGI application based on
