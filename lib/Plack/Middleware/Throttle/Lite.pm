@@ -6,13 +6,12 @@ use strict;
 use warnings;
 use parent 'Plack::Middleware';
 use Plack::Util::Accessor qw(limits maxreq units backend routes blacklist whitelist defaults privileged header_prefix);
-use Scalar::Util qw(reftype);
 use List::MoreUtils qw(any);
 use Plack::Util;
 use Carp ();
 use Net::CIDR::Lite;
 
-our $VERSION = '0.04'; # VERSION
+our $VERSION = '0.05'; # VERSION
 our $AUTHORITY = 'cpan:CHIM'; # AUTHORITY
 
 #
@@ -146,8 +145,8 @@ sub _initialize_backend {
     my ($class, $args) = ($self->defaults->{backend}, {});
 
     if ($self->backend) {
-        my $reft = reftype $self->backend;
-        if (! defined($reft)) { # SCALAR
+        my $reft = uc(ref($self->backend) || 'NA');
+        if ($reft eq 'NA') { # SCALAR
             ($class, $args) = ($self->backend, {});
         }
         elsif ($reft eq 'ARRAY') {
@@ -171,8 +170,8 @@ sub _normalize_routes {
     my $routes = [];
 
     if ($self->routes) {
-        my $reft = reftype $self->routes;
-        if (! defined($reft)) { # SCALAR
+        my $reft = uc(ref($self->routes) || 'NA');
+        if ($reft eq 'NA') { # SCALAR
             $routes = [ $self->routes ];
         }
         elsif ($reft eq 'REGEXP') {
@@ -253,7 +252,7 @@ sub _initialize_accesslist {
     my $list = Net::CIDR::Lite->new;
 
     if ($items) {
-        map { $list->add_any($_) } reftype($items) eq 'ARRAY' ? @$items : ( $items );
+        map { $list->add_any($_) } ref($items) eq 'ARRAY' ? @$items : ( $items );
     }
 
     $list;
@@ -293,7 +292,20 @@ Plack::Middleware::Throttle::Lite - Requests throttling for Plack
 
 =head1 VERSION
 
-version 0.04
+version 0.05
+
+=head1 SYNOPSIS
+
+    # inside your app.psgi
+    my $app = builder {
+        enable 'Throttle::Lite',
+            limits => '100 req/hour', backend => 'Simple',
+            routes => [ qr{^/(host|item)/search}, qr{^/users/add} ],
+            blacklist => [ '127.0.0.9/32', '10.90.90.90-10.90.90.92', '8.8.8.8', '192.168.0.10/31' ];
+        sub {
+            [ 200, ['Content-Type' => 'text/plain'], [ 'OK' ] ];
+        }
+    };
 
 =head1 DESCRIPTION
 
@@ -329,19 +341,6 @@ There is an API which allows to write and use any database or cache system to ma
 It will not install C<a-half-of-CPAN> or C<heavy> dependencies!
 
 =back
-
-=head1 SYNOPSYS
-
-    # inside your app.psgi
-    my $app = builder {
-        enable 'Throttle::Lite',
-            limits => '100 req/hour', backend => 'Simple',
-            routes => [ qr{^/(host|item)/search}, qr{^/users/add} ],
-            blacklist => [ '127.0.0.9/32', '10.90.90.90-10.90.90.92', '8.8.8.8', '192.168.0.10/31' ];
-        sub {
-            [ 200, ['Content-Type' => 'text/plain'], [ 'OK' ] ];
-        }
-    };
 
 =head1 CONFIGURATION OPTIONS
 

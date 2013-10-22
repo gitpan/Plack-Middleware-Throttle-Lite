@@ -7,7 +7,7 @@ use warnings;
 use Carp ();
 use POSIX qw/strftime/;
 
-our $VERSION = '0.04'; # VERSION
+our $VERSION = '0.05'; # VERSION
 our $AUTHORITY = 'cpan:CHIM'; # AUTHORITY
 
 sub new {
@@ -70,19 +70,21 @@ sub expire_in {
     my ($self) = @_;
 
     my ($sec, $min, $hour) = localtime(time);
-    my $unit = $self->settings->{'unit'} || 'req/hour';
+    my $interval = $self->settings->{'interval'};
 
     my $already_passed;
-    if ($unit eq 'req/day') {
+
+    if ($interval == 86400) {       # req/day
         $already_passed = 3600 * $hour + 60 * $min + $sec;
     }
-    elsif ($unit eq 'req/hour') {
+    elsif ($interval == 3600) {     # req/hour
         $already_passed = 60 * $min + $sec;
     }
-    else {
+    else {                          # req/min
         $already_passed = $sec;
     }
-    $self->settings->{'interval'} - $already_passed;
+
+    $interval - $already_passed;
 }
 
 sub ymdh {
@@ -109,7 +111,7 @@ Plack::Middleware::Throttle::Lite::Backend::Abstract - Base class for Throttle::
 
 =head1 VERSION
 
-version 0.04
+version 0.05
 
 =head1 DESCRIPTION
 

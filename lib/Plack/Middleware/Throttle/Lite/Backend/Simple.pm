@@ -6,7 +6,7 @@ use strict;
 use warnings;
 use parent 'Plack::Middleware::Throttle::Lite::Backend::Abstract';
 
-our $VERSION = '0.04'; # VERSION
+our $VERSION = '0.05'; # VERSION
 our $AUTHORITY = 'cpan:CHIM'; # AUTHORITY
 
 my $_storage;
@@ -33,17 +33,17 @@ Plack::Middleware::Throttle::Lite::Backend::Simple - Simple (in-memory) backend 
 
 =head1 VERSION
 
-version 0.04
+version 0.05
+
+=head1 SYNOPSIS
+
+    # inside your app.psgi
+    enable 'Throttle::Lite', backend => 'Simple';
 
 =head1 DESCRIPTION
 
 This is very simple implemetation of the storage backend. It holds all data in memory. If you restart application
 all data will be flushed.
-
-=head1 SYNOPSYS
-
-    # inside your app.psgi
-    enable 'Throttle::Lite', backend => 'Simple';
 
 =head1 CONFIGURATION
 

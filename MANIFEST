@@ -19,9 +19,13 @@ t/03-limits.t
 t/04-blacklist.t
 t/05-whitelist.t
 t/06-user.t
+t/07-backend.t
+t/08-routes.t
+t/author-test-eol.t
 t/lib/PMTL.pm
 t/release-distmeta.t
 t/release-kwalitee.t
+t/release-no-tabs.t
 t/release-pod-coverage.t
 t/release-pod-syntax.t
 t/release-test-version.t
